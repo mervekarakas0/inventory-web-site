@@ -1,0 +1,196 @@
+<%- include('partials/header') %>
+<link rel="stylesheet" href="/css/styles.css" />
+
+<style>
+  /* --- SAYFA ÖZEL STİLLERİ --- */
+  .d-none { display: none !important; }
+  
+  .edit-mode input, .edit-mode select { 
+    border: 1px solid #0d6efd !important; 
+    background-color: #f8fbff !important;
+  }
+
+  .action-btn {
+    width: 38px; height: 38px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 8px; border: none;
+    transition: all 0.2s ease; cursor: pointer;
+    font-size: 1.1rem; padding: 0;
+  }
+
+  .btn-edit-soft { background-color: #e7f1ff; color: #0d6efd; }
+  .btn-edit-soft:hover { background-color: #0d6efd; color: white; transform: translateY(-2px); }
+
+  .btn-save-soft { background-color: #d1e7dd; color: #0f5132; }
+  .btn-save-soft:hover { background-color: #198754; color: white; transform: translateY(-2px); }
+
+  .btn-cancel-soft { background-color: #f8f9fa; color: #6c757d; }
+  .btn-cancel-soft:hover { background-color: #6c757d; color: white; transform: translateY(-2px); }
+
+  .btn-delete-soft { background-color: #ffe5e5; color: #dc3545; }
+  .btn-delete-soft:hover { background-color: #dc3545; color: white; transform: translateY(-2px); }
+
+  .action-group { display: flex; gap: 8px; justify-content: flex-end; }
+</style>
+
+<div class="container my-5">
+  <div class="modern-card">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h2 class="modern-title">Alt Kategoriler</h2>
+      <span class="text-muted small">Toplam: <%= subCategories ? subCategories.length : 0 %> kayıt</span>
+    </div>
+
+    <% if (user && user.canManageCategories) { %>
+      <form action="/subCategories/add" method="POST" class="row g-3 mb-5 align-items-end p-4 border rounded-3 bg-white shadow-sm">
+  <div class="col-md-5">
+    <label class="form-label small text-muted fw-bold ms-1">Ana Kategori</label>
+<select name="productTypeID" class="modern-input form-select" required>
+    <option value="" disabled selected>Bir Ana Kategori Seçin...</option>
+    <% if (productTypes && productTypes.length > 0) { %>
+        <% productTypes.forEach(pt => { %>
+            <option value="<%= pt.ID %>"><%= pt.ProductName %></option>
+        <% }) %>
+    <% } %>
+</select>
+  </div>
+  <div class="col-md-5">
+    <label class="form-label small text-muted fw-bold ms-1">Alt Kategori Adı</label>
+    <input type="text" name="subCategory" class="modern-input" required />
+  </div>
+  <div class="col-md-2">
+    <button type="submit" class="btn-modern-primary w-100" style="height: 45px;">+ Ekle</button>
+  </div>
+</form>
+    <% } else { %>
+      <div class="alert alert-info border-0 shadow-sm mb-5 py-3">
+        <i class="bi bi-info-circle me-2"></i> Alt kategori ekleme ve düzenleme yetkiniz bulunmamaktadır.
+      </div>
+    <% } %>
+
+    <div class="table-responsive">
+      <table class="modern-table">
+        <thead>
+          <tr>
+            <th style="width: 80px; padding-left: 20px;"># ID</th>
+            <th>Ana Kategori</th>
+            <th>Alt Kategori</th>
+            <th style="text-align: right; padding-right: 20px;">İşlemler</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (subCategories && subCategories.length > 0) { %>
+            <% subCategories.forEach(sc => { %>
+              <tr id="row-subcat-<%= sc.ID %>">
+                <td class="td-id-badge" style="padding-left: 20px;">#<%= sc.ID %></td>
+
+                <td>
+                  <span class="view-mode-subcat-<%= sc.ID %>" style="font-weight: 500;"><%= sc.ProductName %></span>
+                  <select name="productTypeID" class="edit-mode-subcat-<%= sc.ID %> modern-input form-select py-1 d-none" style="font-size: 0.9rem;">
+                    <% productTypes.forEach(pt => { %>
+                      <option value="<%= pt.ID %>" <%= pt.ID === sc.ProductTypeID ? 'selected' : '' %>><%= pt.ProductName %></option>
+                    <% }) %>
+                  </select>
+                </td>
+
+                <td>
+                  <span class="view-mode-subcat-<%= sc.ID %>"><%= sc.SubCategory %></span>
+                  <input type="text" name="subCategory" class="edit-mode-subcat-<%= sc.ID %> modern-input py-1 d-none" value="<%= sc.SubCategory %>" style="font-size: 0.9rem;">
+                </td>
+
+                <td style="text-align: right; padding-right: 20px;">
+                  <div class="action-group">
+                    <% if (user && user.canManageCategories) { %>
+                      <button class="action-btn btn-edit-soft view-mode-subcat-<%= sc.ID %>" onclick="toggleEdit('subcat', '<%= sc.ID %>')">✏️</button>
+                      
+                      <button class="action-btn btn-save-soft edit-mode-subcat-<%= sc.ID %> d-none" onclick="saveData('subCategories', '<%= sc.ID %>')">✅</button>
+                      <button class="action-btn btn-cancel-soft edit-mode-subcat-<%= sc.ID %> d-none" onclick="toggleEdit('subcat', '<%= sc.ID %>')">✕</button>
+
+                      <button type="button" class="action-btn btn-delete-soft view-mode-subcat-<%= sc.ID %>" onclick="deleteItem(event, 'subCategories', '<%= sc.ID %>')">🗑️</button>
+                    <% } else { %>
+                      <span class="text-muted small">Yetki Yok</span>
+                    <% } %>
+                  </div>
+                </td>
+              </tr>
+            <% }) %>
+          <% } else { %>
+            <tr><td colspan="4" class="text-center py-5 text-muted">Kayıt bulunamadı.</td></tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+  // 1. Düzenleme Modu Geçişi
+  function toggleEdit(type, id) {
+    const viewEls = document.querySelectorAll(`.view-mode-${type}-${id}`);
+    const editEls = document.querySelectorAll(`.edit-mode-${type}-${id}`);
+    viewEls.forEach(el => el.classList.toggle('d-none'));
+    editEls.forEach(el => el.classList.toggle('d-none'));
+  }
+
+  // 2. Veriyi Kaydet (JSON İsteği)
+  async function saveData(route, id) {
+    const row = document.getElementById(`row-subcat-${id}`);
+    const inputs = row.querySelectorAll('input, select');
+    const data = {};
+
+    inputs.forEach(input => {
+      if (input.name && !input.classList.contains('d-none')) {
+        data[input.name] = input.value;
+      }
+    });
+
+    try {
+      const response = await fetch(`/${route}/edit/${id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        showToast("Kayıt başarıyla güncellendi!", "success");
+        setTimeout(() => {
+            window.location.reload();
+        }, 1500); 
+      } else {
+        showToast(result.error || "Güncelleme başarısız.", "error");
+      }
+    } catch (err) {
+      showToast("Sunucuyla iletişim hatası oluştu.", "error");
+    }
+  }
+
+  // 3. Veriyi Sil (JSON İsteği)
+  async function deleteItem(event, route, id) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+
+    const onay = confirm('Bu alt kategoriyi silmek istediğinize emin misiniz?');
+    if (!onay) return;
+
+    try {
+      const response = await fetch(`/${route}/delete/${id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        showToast("Kayıt başarıyla silindi!", "success");
+        setTimeout(() => window.location.reload(), 1500);
+      } else {
+        showToast(result.error || "Silme işlemi başarısız.", "error");
+      }
+    } catch (err) {
+      showToast("Sunucuyla iletişim hatası oluştu.", "error");
+    }
+  }
+</script>

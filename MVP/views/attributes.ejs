@@ -1,0 +1,241 @@
+<%- include('partials/header') %>
+<link rel="stylesheet" href="/css/styles.css" />
+
+<style>
+  /* Sayfaya Özel Stil: Sadece Tablar, Butonlar ve Düzenleme Modu İçin */
+  .d-none { display: none !important; }
+  
+  .edit-mode input { 
+    border: 1px solid #0d6efd !important; 
+    background-color: #f8fbff !important;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+  }
+
+  .action-btn {
+    width: 38px; height: 38px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 8px; border: none;
+    transition: all 0.2s ease; cursor: pointer;
+    font-size: 1.1rem; padding: 0; text-decoration: none;
+  }
+
+  .btn-edit-soft { background-color: #e7f1ff; color: #0d6efd; }
+  .btn-edit-soft:hover { background-color: #0d6efd; color: white; transform: translateY(-2px); }
+
+  .btn-save-soft { background-color: #d1e7dd; color: #0f5132; }
+  .btn-save-soft:hover { background-color: #198754; color: white; transform: translateY(-2px); }
+
+  .btn-cancel-soft { background-color: #f8f9fa; color: #6c757d; }
+  .btn-cancel-soft:hover { background-color: #6c757d; color: white; transform: translateY(-2px); }
+
+  .btn-delete-soft { background-color: #ffe5e5; color: #dc3545; }
+  .btn-delete-soft:hover { background-color: #dc3545; color: white; transform: translateY(-2px); }
+
+  .action-group { display: flex; gap: 8px; justify-content: flex-end; }
+  
+  .custom-tab { font-weight: 600; padding: 10px 20px; border-radius: 8px; transition: all 0.3s; }
+  .custom-tab.active { background-color: #052133 !important; color: white !important; }
+</style>
+
+<div class="container my-5">
+  <div class="modern-card">
+    <div class="mb-4">
+      <h2 class="modern-title">Renk ve Birim Yönetimi</h2>
+    </div>
+
+    <% const activeTab = tab || 'colors'; %>
+    <ul class="nav nav-pills mb-4 gap-2" style="border-bottom: 2px solid #f0f0f0; padding-bottom: 20px;">
+      <li class="nav-item">
+        <a href="/attributes?tab=colors" class="nav-link custom-tab <%= activeTab === 'colors' ? 'active' : '' %>">🎨 Renkler</a>
+      </li>
+      <li class="nav-item">
+        <a href="/attributes?tab=units" class="nav-link custom-tab <%= activeTab === 'units' ? 'active' : '' %>">📏 Birimler</a>
+      </li>
+    </ul>
+
+    <div class="tab-content">
+      <div class="tab-pane fade <%= activeTab === 'colors' ? 'show active' : '' %>">
+        <% if (user && user.canManageCategories) { %>
+            <form action="/attributes/colors/add" method="POST" class="row g-3 mb-5 align-items-end p-4 border rounded-3 bg-white shadow-sm">
+              <div class="col-md-9">
+                <label class="form-label small text-muted fw-bold ms-1">Yeni Renk Adı</label>
+                <input type="text" name="colorName" class="modern-input" placeholder="✨ Örn: Gece Mavisi, Mat Siyah..." required />
+              </div>
+              <div class="col-md-3">
+                <button type="submit" class="btn-modern-primary w-100" style="height: 45px; padding: 0;">+ Renk Ekle</button>
+              </div>
+            </form>
+        <% } else { %>
+            <div class="alert alert-info border-0 shadow-sm mb-5">
+                <i class="bi bi-info-circle me-2"></i> Renk tanımlama yetkiniz bulunmamaktadır.
+            </div>
+        <% } %>
+
+        <div class="table-responsive">
+          <table class="modern-table">
+            <thead>
+              <tr>
+                <th style="width: 80px; padding-left: 20px;"># ID</th>
+                <th>Renk Adı</th>
+                <th style="text-align: right; padding-right: 20px;">İşlemler</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% if (colors && colors.length > 0) { %>
+                <% colors.forEach(color => { %>
+                  <tr id="row-color-<%= color.ID %>">
+                    <td class="td-id-badge" style="padding-left: 20px;">#<%= color.ID %></td>
+                    <td>
+                      <span class="view-mode-color-<%= color.ID %>" style="font-weight: 500;"><%= color.ColorName %></span>
+                      <input type="text" class="edit-mode-color-<%= color.ID %> modern-input d-none" name="colorName" value="<%= color.ColorName %>">
+                    </td>
+                    <td style="text-align: right; padding-right: 20px;">
+                      <div class="action-group">
+                        <% if (user && user.canManageCategories) { %>
+                            <button class="action-btn btn-edit-soft view-mode-color-<%= color.ID %>" onclick="toggleEdit('color', '<%= color.ID %>')">✏️</button>
+                            <button class="action-btn btn-save-soft edit-mode-color-<%= color.ID %> d-none" onclick="saveData('colors', '<%= color.ID %>')">✅</button>
+                            <button class="action-btn btn-cancel-soft edit-mode-color-<%= color.ID %> d-none" onclick="toggleEdit('color', '<%= color.ID %>')">✕</button>
+                            <button type="button" class="action-btn btn-delete-soft view-mode-color-<%= color.ID %>" onclick="deleteItem(event, 'colors', '<%= color.ID %>')">🗑️</button>
+                        <% } else { %>
+                            <span class="text-muted small">Yetki Yok</span>
+                        <% } %>
+                      </div>
+                    </td>
+                  </tr>
+                <% }) %>
+              <% } else { %>
+                <tr><td colspan="3" class="text-center py-4">Kayıtlı renk bulunamadı.</td></tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="tab-pane fade <%= activeTab === 'units' ? 'show active' : '' %>">
+        <% if (user && user.canManageCategories) { %>
+            <form action="/attributes/units/add" method="POST" class="row g-3 mb-5 align-items-end p-4 border rounded-3 bg-white shadow-sm">
+              <div class="col-md-3">
+                <label class="form-label small text-muted fw-bold ms-1">Birim Kodu</label>
+                <input type="text" name="unitCode" class="modern-input" placeholder="Örn: KG, ADET" required />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small text-muted fw-bold ms-1">Birim Adı</label>
+                <input type="text" name="unitName" class="modern-input" placeholder="✨ Örn: Kilogram, Adet..." required />
+              </div>
+              <div class="col-md-3">
+                <button type="submit" class="btn-modern-primary w-100" style="height: 45px; padding: 0;">+ Birim Ekle</button>
+              </div>
+            </form>
+        <% } else { %>
+            <div class="alert alert-info border-0 shadow-sm mb-5">
+                <i class="bi bi-info-circle me-2"></i> Birim tanımlama yetkiniz bulunmamaktadır.
+            </div>
+        <% } %>
+
+        <div class="table-responsive">
+          <table class="modern-table">
+            <thead>
+              <tr>
+                <th style="width: 120px; padding-left: 20px;">Kod</th>
+                <th>Birim Adı</th>
+                <th style="text-align: right; padding-right: 20px;">İşlemler</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% if (units && units.length > 0) { %>
+                <% units.forEach(unit => { %>
+                  <tr id="row-unit-<%= unit.UnitCode %>">
+                    <td style="padding-left: 20px;">
+                      <span class="view-mode-unit-<%= unit.UnitCode %> td-id-badge text-uppercase"><%= unit.UnitCode %></span>
+                      <input type="text" class="edit-mode-unit-<%= unit.UnitCode %> modern-input d-none text-uppercase" name="newUnitCode" value="<%= unit.UnitCode %>" style="width: 80px;">
+                    </td>
+                    <td>
+                      <span class="view-mode-unit-<%= unit.UnitCode %>" style="font-weight: 500;"><%= unit.UnitName %></span>
+                      <input type="text" class="edit-mode-unit-<%= unit.UnitCode %> modern-input d-none" name="unitName" value="<%= unit.UnitName %>">
+                    </td>
+                    <td style="text-align: right; padding-right: 20px;">
+                      <div class="action-group">
+                        <% if (user && user.canManageCategories) { %>
+                            <button class="action-btn btn-edit-soft view-mode-unit-<%= unit.UnitCode %>" onclick="toggleEdit('unit', '<%= unit.UnitCode %>')">✏️</button>
+                            <button class="action-btn btn-save-soft edit-mode-unit-<%= unit.UnitCode %> d-none" onclick="saveData('units', '<%= unit.UnitCode %>')">✅</button>
+                            <button class="action-btn btn-cancel-soft edit-mode-unit-<%= unit.UnitCode %> d-none" onclick="toggleEdit('unit', '<%= unit.UnitCode %>')">✕</button>
+                            <button type="button" class="action-btn btn-delete-soft view-mode-unit-<%= unit.UnitCode %>" onclick="deleteItem(event, 'units', '<%= unit.UnitCode %>')">🗑️</button>
+                        <% } else { %>
+                            <span class="text-muted small">Yetki Yok</span>
+                        <% } %>
+                      </div>
+                    </td>
+                  </tr>
+                <% }) %>
+              <% } else { %>
+                <tr><td colspan="3" class="text-center py-4">Kayıtlı birim bulunamadı.</td></tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function toggleEdit(type, id) {
+    const viewEls = document.querySelectorAll(`.view-mode-${type}-${id}`);
+    const editEls = document.querySelectorAll(`.edit-mode-${type}-${id}`);
+    viewEls.forEach(el => el.classList.toggle('d-none'));
+    editEls.forEach(el => el.classList.toggle('d-none'));
+  }
+
+  async function saveData(type, id) {
+    const rowPrefix = type === 'colors' ? 'color' : 'unit';
+    const rowId = `row-${rowPrefix}-${id}`;
+    const row = document.getElementById(rowId);
+    const inputs = row.querySelectorAll('input');
+    const data = {};
+
+    inputs.forEach(input => {
+      if (input.name && !input.classList.contains('d-none')) data[input.name] = input.value;
+    });
+
+    try {
+      const response = await fetch(`/attributes/${type}/edit/${id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      const result = await response.json();
+      if (response.ok) {
+        showToast("Güncelleme başarıyla yapıldı!", "success");
+        setTimeout(() => window.location.reload(), 1500);
+      } else {
+        showToast(result.error || "Güncelleme yapılamadı.", "error");
+      }
+    } catch (err) {
+      showToast("Sunucuyla iletişim hatası oluştu.", "error");
+    }
+  }
+
+  async function deleteItem(event, type, id) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    const onay = confirm('Bu kaydı silmek istediğinize emin misiniz?');
+    if (!onay) return;
+    try {
+        const response = await fetch(`/attributes/${type}/delete/${id}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const result = await response.json();
+        if (response.ok) {
+            showToast("Kayıt başarıyla silindi!", "success");
+            setTimeout(() => window.location.reload(), 1500);
+        } else {
+            showToast(result.error || "Silme işlemi başarısız.", "error");
+        }
+    } catch (err) {
+        showToast("Hata: Sunucuya ulaşılamadı.", "error");
+    }
+  }
+</script>

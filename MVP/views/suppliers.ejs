@@ -1,0 +1,183 @@
+<%- include('partials/header') %>
+<link rel="stylesheet" href="/css/styles.css" />
+
+<style>
+    /* Satır İçi Düzenleme Stilleri */
+    .d-none { display: none !important; }
+    .edit-mode input { 
+        border: 1px solid #0d6efd !important; 
+        background-color: #f8fbff !important;
+        font-size: 0.85rem !important;
+        padding: 4px 8px !important;
+    }
+
+    /* Buton ve Tablo Yapısı */
+    .action-btn { width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; border: none; transition: all 0.2s ease; cursor: pointer; }
+    .btn-edit-soft { background-color: #e7f1ff; color: #0d6efd; }
+    .btn-edit-soft:hover { background-color: #0d6efd; color: white; transform: translateY(-2px); }
+    .btn-save-soft { background-color: #d1e7dd; color: #0f5132; }
+    .btn-save-soft:hover { background-color: #198754; color: white; transform: translateY(-2px); }
+    .btn-cancel-soft { background-color: #f8f9fa; color: #6c757d; }
+    .btn-cancel-soft:hover { background-color: #6c757d; color: white; transform: translateY(-2px); }
+    .btn-delete-soft { background-color: #ffe5e5; color: #dc3545; }
+    .btn-delete-soft:hover { background-color: #dc3545; color: white; transform: translateY(-2px); }
+    .action-group { display: flex; gap: 8px; justify-content: flex-end; }
+</style>
+
+<div class="container-fluid px-4 my-5">
+    <div class="modern-card">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="modern-title">Tedarikçi Yönetimi</h2>
+            <span class="text-muted small">Toplam: <%= suppliers ? suppliers.length : 0 %> kayıt</span>
+        </div>
+
+        <% if (user && user.canManageSuppliers) { %>
+            <form action="/suppliers/add" method="POST" class="mb-5 p-4 border rounded-3 bg-white shadow-sm">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-2">
+                        <label class="form-label small text-muted fw-bold ms-1">Tedarikçi Kodu</label>
+                        <input type="text" name="supplierCode" class="modern-input text-uppercase" placeholder="TED01" required maxlength="10">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted fw-bold ms-1">Firma Adı</label>
+                        <input type="text" name="supplierName" class="modern-input" placeholder="Firma Adı" required maxlength="100">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small text-muted fw-bold ms-1">Telefon</label>
+                        <input type="text" name="phone" class="modern-input" placeholder="05XX..." maxlength="20">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small text-muted fw-bold ms-1">E-posta</label>
+                        <input type="email" name="email" class="modern-input" placeholder="mail@example.com" maxlength="100">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small text-muted fw-bold ms-1">Not</label>
+                        <input type="text" name="note" class="modern-input" placeholder="Kısa not..." maxlength="255">
+                    </div>
+                    <div class="col-md-1">
+                        <button type="submit" class="btn-modern-primary w-100" style="padding: 10px 5px;">+ Ekle</button>
+                    </div>
+                </div>
+            </form>
+        <% } else { %>
+            <div class="alert alert-info border-0 shadow-sm mb-5">
+                <i class="bi bi-info-circle me-2"></i> Tedarikçi ekleme ve düzenleme yetkiniz bulunmamaktadır.
+            </div>
+        <% } %>
+
+        <div class="table-responsive">
+            <table class="modern-table">
+                <thead>
+                    <tr>
+                        <th class="ps-3">Kod</th>
+                        <th>Firma Adı</th>
+                        <th>Telefon</th>
+                        <th>E-posta</th>
+                        <th>Not</th>
+                        <th class="pe-3 text-end">İşlemler</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% if (suppliers && suppliers.length > 0) { %>
+                        <% suppliers.forEach(supplier => { %>
+                            <tr id="row-sup-<%= supplier.SupplierCode %>">
+                                <td class="ps-3">
+                                    <span class="view-mode-sup-<%= supplier.SupplierCode %> td-id-badge text-uppercase"><%= supplier.SupplierCode %></span>
+                                    <input type="text" name="newSupplierCode" class="edit-mode-sup-<%= supplier.SupplierCode %> modern-input d-none text-uppercase" value="<%= supplier.SupplierCode %>">
+                                </td>
+                                <td>
+                                    <span class="view-mode-sup-<%= supplier.SupplierCode %> fw-bold text-dark"><%= supplier.SupplierName %></span>
+                                    <input type="text" name="supplierName" class="edit-mode-sup-<%= supplier.SupplierCode %> modern-input d-none" value="<%= supplier.SupplierName %>">
+                                </td>
+                                <td>
+                                    <span class="view-mode-sup-<%= supplier.SupplierCode %>"><%= supplier.Phone || '-' %></span>
+                                    <input type="text" name="phone" class="edit-mode-sup-<%= supplier.SupplierCode %> modern-input d-none" value="<%= supplier.Phone || '' %>">
+                                </td>
+                                <td>
+                                    <span class="view-mode-sup-<%= supplier.SupplierCode %>"><%= supplier.Email || '-' %></span>
+                                    <input type="email" name="email" class="edit-mode-sup-<%= supplier.SupplierCode %> modern-input d-none" value="<%= supplier.Email || '' %>">
+                                </td>
+                                <td>
+                                    <span class="view-mode-sup-<%= supplier.SupplierCode %> text-muted small"><%= supplier.Note || '' %></span>
+                                    <input type="text" name="note" class="edit-mode-sup-<%= supplier.SupplierCode %> modern-input d-none" value="<%= supplier.Note || '' %>">
+                                </td>
+                                <td class="pe-3 text-end">
+                                    <div class="action-group">
+                                        <% if (user && user.canManageSuppliers) { %>
+                                            <button class="action-btn btn-edit-soft view-mode-sup-<%= supplier.SupplierCode %>" onclick="toggleEdit('sup', '<%= supplier.SupplierCode %>')">✏️</button>
+                                            <button class="action-btn btn-save-soft edit-mode-sup-<%= supplier.SupplierCode %> d-none" onclick="saveData('suppliers', '<%= supplier.SupplierCode %>')">✅</button>
+                                            <button class="action-btn btn-cancel-soft edit-mode-sup-<%= supplier.SupplierCode %> d-none" onclick="toggleEdit('sup', '<%= supplier.SupplierCode %>')">✕</button>
+                                            <button type="button" class="action-btn btn-delete-soft view-mode-sup-<%= supplier.SupplierCode %>" onclick="deleteItem(event, 'suppliers', '<%= supplier.SupplierCode %>')">🗑️</button>
+                                        <% } else { %>
+                                            <span class="text-muted small">Yetki Yok</span>
+                                        <% } %>
+                                    </div>
+                                </td>
+                            </tr>
+                        <% }) %>
+                    <% } else { %>
+                        <tr><td colspan="6" class="text-center py-5 text-muted">Kayıtlı tedarikçi bulunamadı.</td></tr>
+                    <% } %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Görünüm Değiştirme
+    function toggleEdit(type, id) {
+        const viewEls = document.querySelectorAll(`.view-mode-${type}-${id}`);
+        const editEls = document.querySelectorAll(`.edit-mode-${type}-${id}`);
+        viewEls.forEach(el => el.classList.toggle('d-none'));
+        editEls.forEach(el => el.classList.toggle('d-none'));
+    }
+
+    // Veri Kaydetme
+    async function saveData(route, id) {
+        const row = document.getElementById(`row-sup-${id}`);
+        const inputs = row.querySelectorAll('input');
+        const data = {};
+        inputs.forEach(input => { 
+            if (input.name && !input.classList.contains('d-none')) data[input.name] = input.value; 
+        });
+
+        try {
+            const response = await fetch(`/${route}/edit/${id}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const result = await response.json();
+            if (response.ok) {
+                showToast("Tedarikçi bilgileri güncellendi!", "success");
+                setTimeout(() => window.location.reload(), 1500);
+            } else {
+                showToast(result.error || "Hata oluştu.", "error");
+            }
+        } catch (err) {
+            showToast("Sunucuyla iletişim kurulamadı.", "error");
+        }
+    }
+
+    // Veri Silme
+    async function deleteItem(event, route, id) {
+        event.preventDefault();
+        if (!confirm('Bu tedarikçiyi silmek istediğinize emin misiniz?')) return;
+        try {
+            const response = await fetch(`/${route}/delete/${id}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const result = await response.json();
+            if (response.ok) {
+                showToast("Tedarikçi kaydı silindi!", "success");
+                setTimeout(() => window.location.reload(), 1500);
+            } else {
+                showToast(result.error || "Bu tedarikçi silinemez.", "error");
+            }
+        } catch (err) {
+            showToast("Sunucuyla iletişim hatası.", "error");
+        }
+    }
+</script>

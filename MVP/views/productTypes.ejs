@@ -1,0 +1,145 @@
+<%- include('partials/header') %>
+<link rel="stylesheet" href="/css/styles.css" />
+
+<style>
+  /* --- SAYFA DÜZENİ VE BUTONLAR --- */
+  .d-none { display: none !important; }
+  
+  .action-btn {
+    width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 8px; border: none; transition: all 0.2s ease; cursor: pointer; font-size: 1.1rem;
+  }
+  
+  .btn-edit-soft { background-color: #e7f1ff; color: #0d6efd; }
+  .btn-edit-soft:hover { background-color: #0d6efd; color: white; transform: translateY(-2px); }
+
+  .btn-save-soft { background-color: #d1e7dd; color: #0f5132; }
+  .btn-save-soft:hover { background-color: #198754; color: white; transform: translateY(-2px); }
+
+  .btn-cancel-soft { background-color: #f8f9fa; color: #6c757d; }
+  .btn-cancel-soft:hover { background-color: #6c757d; color: white; transform: translateY(-2px); }
+
+  .btn-delete-soft { background-color: #ffe5e5; color: #dc3545; }
+  .btn-delete-soft:hover { background-color: #dc3545; color: white; transform: translateY(-2px); }
+
+  .action-group { display: flex; gap: 8px; justify-content: flex-end; }
+</style>
+
+<div class="container my-5">
+  <div class="modern-card">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h2 class="modern-title">Ana Kategoriler</h2>
+      <span class="text-muted small">Toplam: <%= productTypes ? productTypes.length : 0 %> kayıt</span>
+    </div>
+
+    <% if (user && user.canManageCategories) { %>
+      <form action="/productTypes/add" method="POST" class="row g-3 mb-5 align-items-end p-4 border rounded-3 bg-white shadow-sm">
+  <div class="col-md-9">
+    <label class="form-label small text-muted fw-bold ms-1">Yeni Kategori Adı</label>
+    <input type="text" name="productTypeName" class="modern-input" placeholder="✨ Örn: Elektronik, Tekstil..." required />
+  </div>
+  <div class="col-md-3">
+    <button type="submit" class="btn-modern-primary w-100" style="height: 45px;">+ Kategori Ekle</button>
+  </div>
+</form>
+    <% } else { %>
+      <div class="alert alert-info border-0 shadow-sm mb-5 py-3">
+        <i class="bi bi-info-circle me-2"></i> Kategori ekleme ve düzenleme yetkiniz bulunmamaktadır.
+      </div>
+    <% } %>
+
+    <div class="table-responsive">
+      <table class="modern-table">
+        <thead>
+          <tr>
+            <th style="width: 80px; padding-left: 20px;"># ID</th>
+            <th>Kategori Adı</th>
+            <th style="text-align: right; padding-right: 20px;">İşlemler</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (productTypes && productTypes.length > 0) { %>
+            <% productTypes.forEach(pt => { %>
+              <tr id="row-pt-<%= pt.ID %>">
+                <td class="td-id-badge" style="padding-left: 20px;">#<%= pt.ID %></td>
+                <td>
+                  <span class="view-mode-pt-<%= pt.ID %>" style="font-weight: 500;"><%= pt.ProductName %></span>
+                  <input type="text" name="productTypeName" class="edit-mode-pt-<%= pt.ID %> modern-input py-1 d-none" value="<%= pt.ProductName %>">
+                </td>
+                <td style="text-align: right; padding-right: 20px;">
+                  <div class="action-group">
+                    <% if (user && user.canManageCategories) { %>
+                      <button class="action-btn btn-edit-soft view-mode-pt-<%= pt.ID %>" onclick="toggleEdit('pt', '<%= pt.ID %>')" title="Düzenle">✏️</button>
+                      <button class="action-btn btn-save-soft edit-mode-pt-<%= pt.ID %> d-none" onclick="saveData('productTypes', '<%= pt.ID %>')" title="Kaydet">✅</button>
+                      <button class="action-btn btn-cancel-soft edit-mode-pt-<%= pt.ID %> d-none" onclick="toggleEdit('pt', '<%= pt.ID %>')" title="İptal">✕</button>
+                      <button type="button" class="action-btn btn-delete-soft view-mode-pt-<%= pt.ID %>" onclick="deleteItem(event, 'productTypes', '<%= pt.ID %>')" title="Sil">🗑️</button>
+                    <% } else { %>
+                      <span class="text-muted small">Yetki Yok</span>
+                    <% } %>
+                  </div>
+                </td>
+              </tr>
+            <% }) %>
+          <% } else { %>
+            <tr><td colspan="3" class="text-center py-5 text-muted">Kayıt bulunamadı.</td></tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+  function toggleEdit(type, id) {
+    const viewEls = document.querySelectorAll(`.view-mode-${type}-${id}`);
+    const editEls = document.querySelectorAll(`.edit-mode-${type}-${id}`);
+    viewEls.forEach(el => el.classList.toggle('d-none'));
+    editEls.forEach(el => el.classList.toggle('d-none'));
+  }
+
+  async function saveData(route, id) {
+    const row = document.getElementById(`row-pt-${id}`);
+    const inputs = row.querySelectorAll('input');
+    const data = {};
+    inputs.forEach(input => { 
+      if (input.name && !input.classList.contains('d-none')) data[input.name] = input.value; 
+    });
+
+    try {
+      const response = await fetch(`/${route}/edit/${id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      const result = await response.json();
+      if (response.ok) {
+        showToast("Kategori güncellendi!", "success");
+        setTimeout(() => window.location.reload(), 1500);
+      } else {
+        showToast(result.error || "Hata oluştu.", "error");
+      }
+    } catch (err) {
+      showToast("Sunucu hatası!", "error");
+    }
+  }
+
+  async function deleteItem(event, route, id) {
+    event.preventDefault();
+    if (!confirm('Bu kategoriyi silmek istediğinize emin misiniz?')) return;
+    try {
+      const response = await fetch(`/${route}/delete/${id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const result = await response.json();
+      if (response.ok) {
+        showToast("Kategori silindi!", "success");
+        setTimeout(() => window.location.reload(), 1500);
+      } else {
+        showToast(result.error || "Hata: Bu kategori kullanımda olabilir.", "error");
+      }
+    } catch (err) {
+      showToast("Sunucu hatası!", "error");
+    }
+  }
+</script>

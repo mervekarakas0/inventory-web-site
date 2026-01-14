@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title><%= typeof title !== 'undefined' ? title : "MERLIN INVENTORY" %></title>
+  
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="/css/styles.css" />
+
+  <style>
+    /* --- MERKEZİ MODERN TOAST TASARIMI --- */
+    #toast-container {
+      position: fixed;
+      right: 20px;
+      z-index: 99999;
+      min-width: 320px;
+      pointer-events: none; /* Tıklamaları engellememesi için */
+    }
+
+    .custom-toast {
+      pointer-events: auto; /* İçeriğe tıklanabilsin */
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+      border: 1px solid rgba(0,0,0,0.05);
+      margin-bottom: 15px;
+      position: relative;
+      overflow: hidden;
+      animation: slideInRight 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      transition: all 0.4s ease;
+    }
+
+    .custom-toast::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 20%;
+      height: 60%;
+      width: 4px;
+      border-radius: 0 4px 4px 0;
+    }
+
+    .toast-success::before { background-color: #2ecc71; }
+    .toast-error::before { background-color: #e74c3c; }
+
+    .toast-icon {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; flex-shrink: 0;
+    }
+
+    .toast-success .toast-icon { background: #ecfdf5; color: #10b981; }
+    .toast-error .toast-icon { background: #fef2f2; color: #ef4444; }
+
+    .toast-content { display: flex; flex-direction: column; }
+    .toast-title { font-size: 14px; font-weight: 700; color: #1f2937; margin-bottom: 2px; }
+    .toast-message { font-size: 13px; color: #6b7280; font-weight: 500; }
+
+    @keyframes slideInRight {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  
+  <%- include('partials/header', { user: typeof user !== 'undefined' ? user : null }) %>
+
+  <div id="toast-container"></div>
+
+  <main>
+    <div class="container mt-4 mb-5">
+      <%- body %>
+    </div>
+  </main>
+
+  <%- include('partials/footer') %>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <script>
+  // 1. Merkezi showToast Fonksiyonu
+  function showToast(message, type = 'success') {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+
+    const navbar = document.querySelector('nav') || document.querySelector('.navbar');
+    const navbarHeight = navbar ? navbar.offsetHeight : 0;
+    container.style.top = (navbarHeight + 15) + "px";
+
+    const toast = document.createElement('div');
+    const title = type === 'success' ? 'Başarılı!' : 'Hata Oluştu';
+    const icon = type === 'success' ? '✓' : '✕';
+    
+    toast.className = `custom-toast toast-${type}`;
+    toast.innerHTML = `
+        <div class="toast-icon">${icon}</div>
+        <div class="toast-content">
+            <span class="toast-title">${title}</span>
+            <span class="toast-message">${message}</span>
+        </div>
+    `;
+
+    container.appendChild(toast);
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'scale(0.9) translateX(20px)';
+        setTimeout(() => toast.remove(), 400);
+    }, 3500);
+  }
+
+  // 2. Mesajları Yakalama (Editör hatasını önlemek için JSON.stringify kullandık)
+  document.addEventListener("DOMContentLoaded", () => {
+    // Sunucudan gelen verileri güvenli bir şekilde JS değişkenine aktaralım
+    const successMsg = "<%= (locals.success && locals.success.length > 0) ? locals.success : '' %>";
+    const errorMsg = "<%= (locals.error && locals.error.length > 0) ? locals.error : '' %>";
+
+    if (successMsg && successMsg.trim() !== "") {
+      showToast(successMsg, "success");
+    }
+
+    if (errorMsg && errorMsg.trim() !== "") {
+      showToast(errorMsg, "error");
+    }
+  });
+</script>
+</body>
+</html>

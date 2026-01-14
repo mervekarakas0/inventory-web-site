@@ -1,0 +1,226 @@
+<%- include('partials/header') %>
+
+<style>
+    /* Sayfaya Özel Gerekli Stiller */
+    .d-none { display: none !important; }
+    .edit-mode input[type="text"], .edit-mode input[type="password"] { 
+        border: 1px solid #0d6efd !important; 
+        background-color: #f8fbff !important;
+        font-size: 0.85rem !important;
+        padding: 4px 8px !important;
+    }
+
+    .action-btn { width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; border: none; transition: all 0.2s ease; cursor: pointer; }
+    .btn-edit-soft { background-color: #e7f1ff; color: #0d6efd; }
+    .btn-save-soft { background-color: #d1e7dd; color: #0f5132; }
+    .btn-cancel-soft { background-color: #f8f9fa; color: #6c757d; }
+    .btn-delete-soft { background-color: #ffe5e5; color: #dc3545; }
+    .action-group { display: flex; gap: 8px; justify-content: flex-end; }
+    
+    .permission-check { width: 16px; height: 16px; cursor: pointer; accent-color: #052133; }
+    .permission-label { font-size: 0.75rem; font-weight: 600; color: #4b5563; }
+</style>
+
+<div class="container-fluid px-4 my-5">
+    <div class="modern-card">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="modern-title">Kullanıcı Yönetimi</h2>
+            <span class="text-muted small">Toplam: <%= users ? users.length : 0 %> kayıt</span>
+        </div>
+
+        <% if (user && user.canManageUsers) { %>
+            <form action="/users/add" method="POST" class="mb-5 p-4 border rounded-3 bg-white shadow-sm">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted fw-bold ms-1">Kullanıcı Adı</label>
+                        <input type="text" name="username" class="modern-input" placeholder="Kullanıcı Adı" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted fw-bold ms-1">Şifre</label>
+                        <input type="password" name="password" class="modern-input" placeholder="Şifre" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted fw-bold ms-1">Yetkiler</label>
+                        <div class="d-flex flex-wrap gap-3 align-items-center bg-light rounded p-2 border" style="min-height: 45px;">
+                            <div class="form-check mb-0">
+                                <input class="form-check-input permission-check" type="checkbox" name="canAddStock" id="addCheck">
+                                <label class="permission-label ms-1" for="addCheck">Stok Ekleme</label>
+                            </div>
+                            <div class="form-check mb-0">
+                                <input class="form-check-input permission-check" type="checkbox" name="canDeleteStock" id="delCheck">
+                                <label class="permission-label ms-1" for="delCheck">Stok Azaltma</label>
+                            </div>
+                            <div class="form-check mb-0">
+                                <input class="form-check-input permission-check" type="checkbox" name="canManageSuppliers" id="supCheck">
+                                <label class="permission-label ms-1" for="supCheck">Tedarikçi Yönetimi</label>
+                            </div>
+                            <div class="form-check mb-0">
+                                <input class="form-check-input permission-check" type="checkbox" name="canManageCategories" id="catCheck">
+                                <label class="permission-label ms-1" for="catCheck">Kategori Yönetimi</label>
+                            </div>
+                            <div class="form-check mb-0">
+                                <input class="form-check-input permission-check" type="checkbox" name="canManageUsers" id="userCheck">
+                                <label class="permission-label ms-1" for="userCheck">Kullanıcı Yönetimi</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 text-end mt-3">
+                        <button type="submit" class="btn-modern-primary px-5" style="padding: 10px 30px;">+ Kullanıcıyı Kaydet</button>
+                    </div>
+                </div>
+            </form>
+        <% } else { %>
+            <div class="alert alert-light border shadow-sm mb-5 py-3">
+                <i class="bi bi-shield-lock me-2 text-warning"></i> Yeni kullanıcı ekleme yetkiniz bulunmamaktadır.
+            </div>
+        <% } %>
+
+        <div class="table-responsive">
+            <table class="modern-table">
+                <thead>
+                    <tr>
+                        <th class="ps-3">Kullanıcı Adı</th>
+                        <th>Şifre</th>
+                        <th class="text-center">Stok Ekleme/Azaltma</th>
+                        <th class="text-center">Tedarikçi</th>
+                        <th class="text-center">Kategori</th>
+                        <th class="text-center">Kullanıcı</th>
+                        <th class="pe-3 text-end">İşlemler</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% if (users && users.length > 0) { %>
+                        <% users.forEach(u => { %>
+                            <tr id="row-user-<%= u.Username %>">
+                                <td class="ps-3">
+                                    <span class="view-mode-user-<%= u.Username %> fw-bold text-dark"><%= u.Username %></span>
+                                    <input type="text" name="username" class="edit-mode-user-<%= u.Username %> modern-input d-none" value="<%= u.Username %>">
+                                </td>
+                                <td>
+                                    <span class="view-mode-user-<%= u.Username %> text-muted">********</span>
+                                    <input type="password" name="password" class="edit-mode-user-<%= u.Username %> modern-input d-none" placeholder="Yeni şifre">
+                                </td>
+                                
+                                <td class="text-center">
+                                    <div class="view-mode-user-<%= u.Username %> d-flex justify-content-center gap-2">
+                                        <span class="badge <%= u.canAddStock ? 'bg-success' : 'bg-danger' %> bg-opacity-10 text-<%= u.canAddStock ? 'success' : 'danger' %> border px-1">
+                                            <%= u.canAddStock ? 'Var' : 'Yok' %>
+                                        </span>
+                                        <span class="badge <%= u.canDeleteStock ? 'bg-success' : 'bg-danger' %> bg-opacity-10 text-<%= u.canDeleteStock ? 'success' : 'danger' %> border px-1">
+                                            <%= u.canDeleteStock ? 'Var' : 'Yok' %>
+                                        </span>
+                                    </div>
+                                    <div class="edit-mode-user-<%= u.Username %> d-none d-flex gap-2 justify-content-center">
+                                        <input type="checkbox" name="canAddStock" class="permission-check" <%= u.canAddStock ? 'checked' : '' %>>
+                                        <input type="checkbox" name="canDeleteStock" class="permission-check" <%= u.canDeleteStock ? 'checked' : '' %>>
+                                    </div>
+                                </td>
+
+                                <td class="text-center">
+                                    <div class="view-mode-user-<%= u.Username %>">
+                                        <span class="badge <%= u.canManageSuppliers ? 'bg-success' : 'bg-danger' %> bg-opacity-10 text-<%= u.canManageSuppliers ? 'success' : 'danger' %> border px-2 py-1 small">
+                                            <%= u.canManageSuppliers ? 'Var' : 'Yok' %>
+                                        </span>
+                                    </div>
+                                    <input type="checkbox" name="canManageSuppliers" class="edit-mode-user-<%= u.Username %> permission-check d-none mx-auto" <%= u.canManageSuppliers ? 'checked' : '' %>>
+                                </td>
+
+                                <td class="text-center">
+                                    <div class="view-mode-user-<%= u.Username %>">
+                                        <span class="badge <%= u.canManageCategories ? 'bg-success' : 'bg-danger' %> bg-opacity-10 text-<%= u.canManageCategories ? 'success' : 'danger' %> border px-2 py-1 small">
+                                            <%= u.canManageCategories ? 'Var' : 'Yok' %>
+                                        </span>
+                                    </div>
+                                    <input type="checkbox" name="canManageCategories" class="edit-mode-user-<%= u.Username %> permission-check d-none mx-auto" <%= u.canManageCategories ? 'checked' : '' %>>
+                                </td>
+
+                                <td class="text-center">
+                                    <div class="view-mode-user-<%= u.Username %>">
+                                        <span class="badge <%= u.canManageUsers ? 'bg-success' : 'bg-danger' %> bg-opacity-10 text-<%= u.canManageUsers ? 'success' : 'danger' %> border px-2 py-1 small">
+                                            <%= u.canManageUsers ? 'Var' : 'Yok' %>
+                                        </span>
+                                    </div>
+                                    <input type="checkbox" name="canManageUsers" class="edit-mode-user-<%= u.Username %> permission-check d-none mx-auto" <%= u.canManageUsers ? 'checked' : '' %>>
+                                </td>
+
+                                <td class="pe-3 text-end">
+                                    <div class="action-group">
+                                        <% if (user && user.canManageUsers) { %>
+                                            <button class="action-btn btn-edit-soft view-mode-user-<%= u.Username %>" onclick="toggleEdit('user', '<%= u.Username %>')">✏️</button>
+                                            <button class="action-btn btn-save-soft edit-mode-user-<%= u.Username %> d-none" onclick="saveUserData('<%= u.Username %>')">✅</button>
+                                            <button class="action-btn btn-cancel-soft edit-mode-user-<%= u.Username %> d-none" onclick="toggleEdit('user', '<%= u.Username %>')">✕</button>
+                                            <button type="button" class="action-btn btn-delete-soft view-mode-user-<%= u.Username %>" onclick="deleteItem(event, 'users', '<%= u.Username %>')">🗑️</button>
+                                        <% } else { %>
+                                            <span class="text-muted small">Kısıtlı</span>
+                                        <% } %>
+                                    </div>
+                                </td>
+                            </tr>
+                        <% }) %>
+                    <% } else { %>
+                        <tr><td colspan="7" class="text-center py-5 text-muted">Kayıtlı kullanıcı bulunamadı.</td></tr>
+                    <% } %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleEdit(type, id) {
+        const viewEls = document.querySelectorAll(`.view-mode-${type}-${id}`);
+        const editEls = document.querySelectorAll(`.edit-mode-${type}-${id}`);
+        viewEls.forEach(el => el.classList.toggle('d-none'));
+        editEls.forEach(el => el.classList.toggle('d-none'));
+    }
+
+    async function saveUserData(oldUsername) {
+        const row = document.getElementById(`row-user-${oldUsername}`);
+        const data = { oldUsername: oldUsername };
+        
+        row.querySelectorAll('input[type="text"], input[type="password"]').forEach(input => {
+            if (input.name) data[input.name] = input.value;
+        });
+
+        row.querySelectorAll('input[type="checkbox"]').forEach(check => {
+            data[check.name] = check.checked;
+        });
+
+        try {
+            const response = await fetch('/users/edit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const result = await response.json();
+            if (response.ok) {
+                showToast("Kullanıcı güncellendi!", "success");
+                setTimeout(() => window.location.reload(), 1500);
+            } else {
+                showToast(result.error || "Hata oluştu.", "error");
+            }
+        } catch (err) {
+            showToast("Sunucuyla iletişim kurulamadı.", "error");
+        }
+    }
+
+    async function deleteItem(event, route, id) {
+        event.preventDefault();
+        if (!confirm('Bu kullanıcıyı silmek istediğinize emin misiniz?')) return;
+        try {
+            const response = await fetch(`/${route}/delete/${id}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const result = await response.json();
+            if (response.ok) {
+                showToast("Kullanıcı silindi!", "success");
+                setTimeout(() => window.location.reload(), 1500);
+            } else {
+                showToast(result.error || "Silme işlemi başarısız.", "error");
+            }
+        } catch (err) {
+            showToast("Sunucu hatası!", "error");
+        }
+    }
+</script>

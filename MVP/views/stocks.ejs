@@ -1,0 +1,226 @@
+<%- include('partials/header') %>
+<link rel="stylesheet" href="/css/styles.css" />
+
+<style>
+    /* Dosya Yükleme Alanı Özelleştirme */
+    .custom-file-label {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 12px;
+        background-color: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    .custom-file-label:hover {
+        border-color: #052133;
+        background-color: #f8f9fa;
+    }
+    .upload-icon-box {
+        background-color: #052133;
+        color: white;
+        padding: 5px 12px;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+    .section-title {
+        color: #052133; 
+        border-left: 4px solid #052133; 
+        padding-left: 10px;
+        margin-top: 1.5rem;
+        margin-bottom: 1rem;
+    }
+</style>
+
+<div class="container my-5">
+    <div class="modern-card">
+        <% if (user && user.canAddStock) { %>
+            <div class="mb-4 border-bottom pb-2">
+                <h2 class="modern-title">Yeni Stok Kartı Oluştur</h2>
+                <p class="text-muted small">Lütfen stok bilgilerini eksiksiz doldurunuz.</p>
+            </div>
+
+            <form action="/stocks/add" method="POST" enctype="multipart/form-data">
+                <div class="row g-3">
+                    
+                    <div class="col-12">
+                        <h5 class="small fw-bold text-uppercase section-title">Temel Bilgiler</h5>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label small text-muted fw-bold ms-1">Üretici P/N</label>
+                        <input type="text" name="manufacturerPN" class="modern-input" placeholder="Parça Numarası">
+                    </div>
+                    <div class="col-md-8">
+                        <label class="form-label small text-muted fw-bold ms-1">Ürün Özelliği</label>
+                        <input type="text" name="feature" class="modern-input" placeholder="Ürün açıklaması veya özelliği">
+                    </div>
+
+                    <div class="col-12">
+                        <h5 class="small fw-bold text-uppercase section-title">Kategorizasyon</h5>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label small text-muted fw-bold ms-1">Ana Kategori</label>
+                        <select name="productTypeId" id="productTypeId" class="modern-input form-select" required>
+                            <option value="">Seçiniz...</option>
+                            <% if (productTypes) { productTypes.forEach(pt => { %>
+                                <option value="<%= pt.ID %>"><%= pt.ProductName %></option>
+                            <% })} %>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small text-muted fw-bold ms-1">Alt Kategori</label>
+                        <select name="subCategoryId" id="subCategoryId" class="modern-input form-select" required>
+                            <option value="">Önce Ana Kategori Seçin</option>
+                            <% if (subCategories) { subCategories.forEach(sc => { %>
+                                <option value="<%= sc.ID %>" data-product-type="<%= sc.ProductTypeID %>" style="display:none;"><%= sc.SubCategory %></option>
+                            <% })} %>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small text-muted fw-bold ms-1">Renk</label>
+                        <select name="colorId" class="modern-input form-select">
+                            <option value="">Seçiniz...</option>
+                            <% if (colors) { colors.forEach(c => { %>
+                                <option value="<%= c.ID %>"><%= c.ColorName %></option>
+                            <% })} %>
+                        </select>
+                    </div>
+
+                    <div class="col-12">
+                        <h5 class="small fw-bold text-uppercase section-title">Miktar ve Tedarik</h5>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label small text-muted fw-bold ms-1">Miktar</label>
+                        <input type="number" step="0.01" name="quantity" class="modern-input" placeholder="0.00" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small text-muted fw-bold ms-1">Birim</label>
+                        <select name="unitCode" class="modern-input form-select" required>
+                            <option value="">Seçiniz...</option>
+                            <% if (units) { units.forEach(u => { %>
+                                <option value="<%= u.UnitCode %>"><%= u.UnitName %></option>
+                            <% })} %>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small text-muted fw-bold ms-1">Tedarikçi</label>
+                        <select name="supplierCode" class="modern-input form-select">
+                            <option value="">Seçiniz...</option>
+                            <% if (suppliers) { suppliers.forEach(s => { %>
+                                <option value="<%= s.SupplierCode %>"><%= s.SupplierName %></option>
+                            <% })} %>
+                        </select>
+                    </div>
+
+                    <div class="col-12">
+                        <h5 class="small fw-bold text-uppercase section-title">Depo ve Lot Bilgileri</h5>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label small text-muted fw-bold ms-1">Depo</label>
+                        <input type="text" name="depo" class="modern-input" placeholder="Depo Adı">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small text-muted fw-bold ms-1">Raf</label>
+                        <input type="text" name="raf" class="modern-input" placeholder="Raf No">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small text-muted fw-bold ms-1">Lot Tarihi</label>
+                        <input type="date" name="lotDate" class="modern-input">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted fw-bold ms-1">Lot No</label>
+                        <input type="text" name="lotNo" class="modern-input" placeholder="Lot Numarası">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted fw-bold ms-1">Üretici Lot No</label>
+                        <input type="text" name="manufacturerLotNo" class="modern-input" placeholder="Üretici Lot">
+                    </div>
+
+                    <div class="col-12">
+                        <h5 class="small fw-bold text-uppercase section-title">Diğer Bilgiler</h5>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted fw-bold ms-1">Kayıt Yapan</label>
+                        <input type="text" name="recordedBy" class="modern-input bg-light" value="<%= user.username %>" readonly> 
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted fw-bold ms-1">Ürün Fotoğrafı</label>
+                        <input type="file" name="urunFoto" id="urunFoto" class="d-none" onchange="updateFileName(this)">
+                        <label for="urunFoto" class="custom-file-label">
+                            <span id="fileNameText" class="text-muted small fst-italic">
+                                <i class="bi bi-paperclip me-1"></i> Dosya seçilmedi...
+                            </span>
+                            <span class="upload-icon-box">
+                                <i class="bi bi-cloud-arrow-up-fill me-1"></i> Fotoğraf Seç
+                            </span>
+                        </label>
+                    </div>
+
+                    <div class="col-12 mt-4">
+                        <button type="submit" class="btn-modern-primary py-3 fs-6 w-100">
+                            ✅ Stok Kartını Kaydet
+                        </button>
+                    </div>
+                </div>
+            </form>
+        <% } else { %>
+            <div class="text-center py-5">
+                <div class="mb-4">
+                    <i class="bi bi-shield-lock text-danger" style="font-size: 4rem;"></i>
+                </div>
+                <h3 class="fw-bold">Erişim Engellendi</h3>
+                <p class="text-muted">Yeni stok kartı oluşturmak için gerekli yetkiye sahip değilsiniz.</p>
+                <div class="mt-4">
+                    <a href="/dashboard" class="btn-modern-primary px-4">Dashboard'a Dön</a>
+                </div>
+            </div>
+        <% } %>
+    </div>
+</div>
+
+<script>
+    // Dosya ismi değişince güncelle
+    function updateFileName(input) {
+        const fileNameSpan = document.getElementById('fileNameText');
+        if (input.files && input.files[0]) {
+            fileNameSpan.innerHTML = `<span class="text-dark fw-bold">${input.files[0].name}</span>`;
+            fileNameSpan.classList.remove('text-muted', 'fst-italic');
+        } else {
+            fileNameSpan.innerHTML = '<i class="bi bi-paperclip me-1"></i> Dosya seçilmedi...';
+            fileNameSpan.classList.add('text-muted', 'fst-italic');
+        }
+    }
+
+    // Kategori Filtreleme
+    document.addEventListener("DOMContentLoaded", function() {
+        const productTypeSelect = document.getElementById('productTypeId');
+        const subCategorySelect = document.getElementById('subCategoryId');
+
+        if (productTypeSelect && subCategorySelect) {
+            productTypeSelect.addEventListener('change', function() {
+                const selectedTypeId = this.value;
+                const options = subCategorySelect.querySelectorAll('option[data-product-type]');
+                
+                subCategorySelect.value = ""; 
+
+                options.forEach(option => {
+                    if (selectedTypeId === "" || option.getAttribute('data-product-type') == selectedTypeId) {
+                        option.style.display = 'block';
+                    } else {
+                        option.style.display = 'none';
+                    }
+                });
+            });
+        }
+    });
+</script>
