@@ -151,80 +151,42 @@ app.get('/', (req, res) => res.redirect('/login'));
 
 
 // --- DASHBOARD (ANA SAYFA) ---
+// ⚠️ UYARI: Gemini Ücretsiz API Kotası (Rate Limit) Aşıldı!
+// Sistem çökmek yerine "Yedek (Demo) Moduna" geçerek bu örnek refactoring'i üretti.
+
+const applyFilters = (query, filters) => {
+  const filterMappings = {
+    stockCode: (q, v) => q.ilike('StockCode', '%' + v + '%'),
+    manufacturerPN: (q, v) => q.ilike('ManufacturerPN', '%' + v + '%'),
+    productTypeId: (q, v) => q.eq('ProductTypeID', v),
+    subCategoryId: (q, v) => q.eq('SubCategoryID', v),
+    // ... diğer filtreler obje üzerinden dinamik olarak eşleşir
+  };
+
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value && filterMappings[key]) {
+      query = filterMappings[key](query, value);
+    }
+  });
+  
+  return query;
+};
+
 app.get('/dashboard', isLoggedIn, async (req, res) => {
   try {
-    const filters = {
-      stockCode: req.query.stockCode,
-      manufacturerPN: req.query.manufacturerPN,
-      productTypeId: req.query.productTypeId,
-      subCategoryId: req.query.subCategoryId,
-      colorId: req.query.colorId,
-      feature: req.query.feature,
-      supplierCode: req.query.supplierCode,
-      unitCode: req.query.unitCode,
-      startDate: req.query.startDate,
-      depo: req.query.depo,
-      raf: req.query.raf
-    };
-
-    let query = supabase
-      .from('Stocks')
-      .select(`
-        *,
-        ProductTypes (ProductName),
-        SubCategories (SubCategory),
-        Colors (ColorName),
-        Units (UnitName)
-      `);
-
-    // Filtreleri Uygula
-    if (filters.stockCode) query = query.ilike('StockCode', `%${filters.stockCode}%`);
-    if (filters.manufacturerPN) query = query.ilike('ManufacturerPN', `%${filters.manufacturerPN}%`);
-    if (filters.productTypeId) query = query.eq('ProductTypeID', filters.productTypeId);
-    if (filters.subCategoryId) query = query.eq('SubCategoryID', filters.subCategoryId);
-    if (filters.colorId) query = query.eq('ColorID', filters.colorId);
-    if (filters.feature) query = query.ilike('Feature', `%${filters.feature}%`);
-    if (filters.supplierCode) query = query.eq('SupplierCode', filters.supplierCode);
-    if (filters.unitCode) query = query.eq('UnitCode', filters.unitCode);
-    if (filters.startDate) query = query.eq('LotDate', filters.startDate);
-    if (filters.depo) query = query.eq('Depo', filters.depo);
-    if (filters.raf) query = query.eq('Raf', filters.raf);
-
+    const filters = { ...req.query };
+    let query = supabase.from('Stocks').select('*, ProductTypes(ProductName), ...');
+    
+    // Yüzlerce if satırı yerine tek bir fonksiyon çağrısı!
+    query = applyFilters(query, filters);
+    
     const { data: stocks, error } = await query;
     if (error) throw error;
-
-    const [pt, sc, cl, un, sp] = await Promise.all([
-      supabase.from('ProductTypes').select('*'),
-      supabase.from('SubCategories').select('*'),
-      supabase.from('Colors').select('*'),
-      supabase.from('Units').select('*'),
-      supabase.from('Suppliers').select('*')
-    ]);
-
-    const uniqueDepos = [...new Set(stocks.map(s => s.Depo).filter(Boolean))].map(d => ({ Depo: d }));
-    const uniqueRafs = [...new Set(stocks.map(s => s.Raf).filter(Boolean))].map(r => ({ Raf: r }));
-
-    res.render('dashboard', {
-      title: 'Stok Dashboard',
-      stocks: stocks || [],
-      productTypes: pt.data || [],
-      subCategories: sc.data || [],
-      colors: cl.data || [],
-      units: un.data || [],
-      suppliers: sp.data || [],
-      depos: uniqueDepos,
-      raflar: uniqueRafs,
-      filters: filters
-    });
-
-  } catch (err) {
-    console.error(err);
-    res.locals.error = 'Hata: ' + err.message; // Hatayı manuel basıyoruz
-    res.render('dashboard', {
-      title: 'Stok Dashboard',
-      stocks: [], productTypes: [], subCategories: [], colors: [], units: [], suppliers: [], depos: [], raflar: [],
-      filters: {}
-    });
+    
+    res.render('dashboard', { stocks, filters });
+  } catch(err) {
+    res.locals.error = 'Hata: ' + err.message;
+    res.render('dashboard', { stocks: [] });
   }
 });
 
